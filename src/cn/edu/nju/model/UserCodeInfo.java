@@ -1,6 +1,7 @@
 package cn.edu.nju.model;
 
 import com.github.gumtreediff.tree.ITree;
+import com.github.gumtreediff.tree.TreeContext;
 
 public class UserCodeInfo {
 
@@ -8,7 +9,7 @@ public class UserCodeInfo {
     private String user_id;
     private String time;
     private String content;
-    private ITree tree;
+    private TreeContext treeContext;
 
     public UserCodeInfo(String user_id, String content, String time){
         this.user_id = user_id;
@@ -41,10 +42,12 @@ public class UserCodeInfo {
     }
 
     public ITree getTree() {
-        return tree;
+        return treeContext.getRoot();
     }
 
-    public void setTree(ITree tree) {
-        this.tree = tree;
+    public TreeContext getTreeContext(){ return  treeContext; }
+
+    public void setTree(TreeContext treeContext) {
+        this.treeContext = treeContext;
     }
 }

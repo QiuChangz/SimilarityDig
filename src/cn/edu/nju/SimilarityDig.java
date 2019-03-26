@@ -1,14 +1,21 @@
-package cn.edu.nju.logic;
+package cn.edu.nju;
 
+import cn.edu.nju.logic.AptedMatcher;
+import cn.edu.nju.logic.GumTreeMatcher;
+import cn.edu.nju.logic.RtedMatcher;
+import cn.edu.nju.logic.clean.FileChineseCharsetDetector;
+import cn.edu.nju.logic.clean.RemoveComment;
 import cn.edu.nju.model.UserCodeInfo;
 import cn.edu.nju.util.FileUtil;
 import cn.edu.nju.util.PropertiesUtil;
 import com.github.gumtreediff.client.Run;
 import com.github.gumtreediff.gen.Generators;
+import com.github.gumtreediff.gen.srcml.SrcmlCppTreeGenerator;
+import com.github.gumtreediff.matchers.optimal.rted.RtedAlgorithm;
 import com.github.gumtreediff.tree.TreeContext;
 
 import java.io.File;
-import java.text.NumberFormat;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,22 +29,32 @@ public class SimilarityDig {
     }
 
     private void init(){
-        Run.initGenerators();
         File dir = new File(fileLocation);
+        FileChineseCharsetDetector fileChineseCharsetDetector = new FileChineseCharsetDetector();
+        SrcmlCppTreeGenerator srcmlCppTreeGenerator = new SrcmlCppTreeGenerator();
         for (File file: dir.listFiles()){
             if (!file.getName().contains(".cpp")){
                 continue;
             }
 
-            String content = FileUtil.readFile(file);
+            String encoding = "UTF-8";
+            try {
+                encoding = fileChineseCharsetDetector.guessFileEncoding(file);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            String content = FileUtil.readFile(file ,encoding);
             String user_id = file.getName().substring(0, file.getName().indexOf("_"));
             String time = file.getName().substring(file.getName().indexOf("_") + 1);
 
             UserCodeInfo gum = new UserCodeInfo(user_id, content, time);
             try {
-                TreeContext srcContext = Generators.getInstance().getTree(file.getAbsolutePath());
-                gum.setTree(srcContext.getRoot());
+                TreeContext srcContext = srcmlCppTreeGenerator.generateFromString(content);
+                RemoveComment.purifyTree(srcContext.getRoot(),srcContext);
+                gum.setTree(srcContext);
             } catch (Exception e) {
+                e.printStackTrace();
                 System.out.println("ITREE_INIT_FAILED USER_ID: " + user_id);
                 continue;
             }
@@ -61,7 +78,9 @@ public class SimilarityDig {
                 if (i == j){
                     result[i][j] = 1.0;
                 } else {
-                    result[i][j] = result[j][i] = GumTreeMatcher.getSimilarity(contents.get(i).getTree(), contents.get(j).getTree());
+//                    result[i][j] = result[j][i] = GumTreeMatcher.getSimilarity(contents.get(i).getTree(), contents.get(j).getTree());
+//                    result[i][j] = result[j][i] = RtedMatcher.getSimilarity(contents.get(i).getTree(), contents.get(j).getTree());
+                    result[i][j] = result[j][i] = AptedMatcher.getSimilarity(contents.get(i).getTreeContext(), contents.get(j).getTreeContext());
                 }
             }
         }
@@ -73,7 +92,7 @@ public class SimilarityDig {
             }
             info.append("\n");
         }
-        FileUtil.writeFile(info.toString(), outputLocation, true);
+        FileUtil.writeFile(info.toString(), outputLocation, false);
     }
 
 //    public void recover(){

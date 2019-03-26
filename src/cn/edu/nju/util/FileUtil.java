@@ -40,4 +40,19 @@ public class FileUtil {
 
         return content.toString();
     }
+
+    public static String readFile(File file,String encoding){
+        StringBuilder content = new StringBuilder();
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), encoding));
+            String tmp = null;
+            while ((tmp = reader.readLine()) != null){
+                content.append(tmp).append("\n");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return content.toString();
+    }
 }
