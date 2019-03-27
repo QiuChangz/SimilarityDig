@@ -2,6 +2,8 @@ package cn.edu.nju;
 
 import cn.edu.nju.logic.AptedMatcher;
 import cn.edu.nju.logic.GumTreeMatcher;
+import cn.edu.nju.logic.Helper.CalculateSimilarityJob;
+import cn.edu.nju.logic.Helper.Notifier;
 import cn.edu.nju.logic.RtedMatcher;
 import cn.edu.nju.logic.clean.FileChineseCharsetDetector;
 import cn.edu.nju.logic.clean.RemoveComment;
@@ -18,6 +20,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import static java.util.concurrent.TimeUnit.*;
 
 public class SimilarityDig {
     private List<UserCodeInfo> contents = new ArrayList<>();
@@ -66,13 +73,7 @@ public class SimilarityDig {
     private void getMatrix(String outputLocation){
         StringBuilder info = new StringBuilder("user_id,");
         double result[][] = new double[contents.size()][contents.size()];
-//        NumberFormat nf = NumberFormat.getPercentInstance();
-//        nf.setMinimumFractionDigits(2);
-        for (UserCodeInfo content : contents) {
-            info.append(content.getUser_id()).append(",");
-        }
-        info.append("\n");
-
+        Notifier notifier = new Notifier(contents.size());
         for (int i = 0; i < contents.size(); i++){
             for (int j = i; j < contents.size(); j++){
                 if (i == j){
@@ -83,8 +84,13 @@ public class SimilarityDig {
                     result[i][j] = result[j][i] = AptedMatcher.getSimilarity(contents.get(i).getTreeContext(), contents.get(j).getTreeContext());
                 }
             }
+            notifier.notifyFinish();
         }
 
+        for (UserCodeInfo content : contents) {
+            info.append(content.getUser_id()).append(",");
+        }
+        info.append("\n");
         for (int i = 0; i < contents.size(); i++){
             info.append(contents.get(i).getUser_id()).append(",");
             for (int j = 0; j < contents.size(); j++){
@@ -95,15 +101,50 @@ public class SimilarityDig {
         FileUtil.writeFile(info.toString(), outputLocation, false);
     }
 
-//    public void recover(){
-//        File file = new File(fileLocation + "\\similarity.csv");
-//        BufferedReader
-//
-//    }
+    private void getMatrixWithMultiThread(String outputLocation){
+        StringBuilder info = new StringBuilder("user_id,");
+        double result[][] = new double[contents.size()][contents.size()];
+
+        ExecutorService fixedThreadPool = Executors.newFixedThreadPool(6);
+        Notifier notifier = new Notifier(contents.size());
+
+
+        for (int i = 0; i < contents.size(); i++){
+            for (int j = i; j < contents.size(); j++){
+                if (i == j){
+                    result[i][j] = 1.0;
+                } else {
+                   fixedThreadPool.execute(new CalculateSimilarityJob(notifier,i,j,contents.get(i).getTreeContext(),contents.get(j).getTreeContext(),result));
+                }
+            }
+        }
+
+        fixedThreadPool.shutdown();
+
+        try {
+            fixedThreadPool.awaitTermination(Long.MAX_VALUE , SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        for (UserCodeInfo content : contents) {
+            info.append(content.getUser_id()).append(",");
+        }
+        info.append("\n");
+        for (int i = 0; i < contents.size(); i++){
+            info.append(contents.get(i).getUser_id()).append(",");
+            for (int j = 0; j < contents.size(); j++){
+                info.append(String.valueOf(result[i][j])).append(",");
+            }
+            info.append("\n");
+        }
+        FileUtil.writeFile(info.toString(), outputLocation, false);
+    }
+
     public static void main(String[] args) {
         String fileLocation = PropertiesUtil.getProperties("cppFileLocation");
         String outputFile = PropertiesUtil.getProperties("outputFile");
         SimilarityDig sd = new SimilarityDig(fileLocation);
-        sd.getMatrix(outputFile);
+        sd.getMatrixWithMultiThread(outputFile);
     }
 }
