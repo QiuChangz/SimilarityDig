@@ -57,7 +57,7 @@ public class ConcatCodeFile {
                     continue;
                 }
 
-                String targetFilePath = concatOutputRootPath + "\\" + userRoot.getName()+"-"+dateTimeRoot.getName() + ".source";
+                String targetFilePath = concatOutputRootPath + "\\" + userRoot.getName()+"_"+dateTimeRoot.getName() + ".source";
 
                 for(File targetFile : targetFiles){
                     String content = FileUtil.readFile(targetFile);

@@ -18,7 +18,7 @@ public class UserCodeInfo {
     }
 
     public String getUser_id() {
-        return user_id;
+        return user_id+"_"+time.substring(0,time.lastIndexOf("."));
     }
 
     public void setUser_id(String user_id) {

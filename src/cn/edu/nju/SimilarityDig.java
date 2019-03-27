@@ -40,7 +40,7 @@ public class SimilarityDig {
         FileChineseCharsetDetector fileChineseCharsetDetector = new FileChineseCharsetDetector();
         SrcmlCppTreeGenerator srcmlCppTreeGenerator = new SrcmlCppTreeGenerator();
         for (File file: dir.listFiles()){
-            if (!file.getName().contains(".cpp")){
+            if (!file.getName().contains(".cpp") && !file.getName().contains(".source")){
                 continue;
             }
 
