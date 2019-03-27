@@ -1,10 +1,12 @@
 package cn.edu.nju.util;
 
+import cn.edu.nju.logic.clean.FileChineseCharsetDetector;
+
 import java.io.*;
 
 public class FileUtil {
 
-    private static String encoding = "gbk";
+    private static FileChineseCharsetDetector charsetDetector = new FileChineseCharsetDetector();
 
     static void writeFile(String content, String path){
         writeFile(content, path, false);
@@ -29,7 +31,7 @@ public class FileUtil {
     public static String readFile(File file){
         StringBuilder content = new StringBuilder();
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), encoding));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), charsetDetector.guessFileEncoding(file)));
             String tmp = null;
             while ((tmp = reader.readLine()) != null){
                 content.append(tmp).append("\n");
